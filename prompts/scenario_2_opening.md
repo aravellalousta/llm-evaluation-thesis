@@ -1,0 +1,1 @@
+I'm trying to write a program that does different things depending on a condition, but I don't really understand how that works in Python. I've heard of if and else but I'm not sure how to use them or what True and False have to do with it.

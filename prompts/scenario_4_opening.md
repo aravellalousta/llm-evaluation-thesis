@@ -1,0 +1,1 @@
+I'm trying to learn how to use functions in Python. I wrote one but when I try to use a variable inside it that I defined outside, sometimes it works and sometimes it doesn't, and I don't understand why.
