@@ -67,7 +67,7 @@
                 console.log("Attempting to load conversations from files:", conversationFiles);
                 for (const file of conversationFiles) {
                     try {
-                        const response = await fetch(`../../conversations/${file}`);
+                        const response = await fetch(`conversations/${file}`);
                         if (!response.ok) continue;
 
                         const data = await response.json();
