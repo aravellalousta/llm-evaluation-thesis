@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Tutoring Evaluation - Conversations</title>
+    <link rel="stylesheet" href="styles/homepage.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LLM Python Tutoring Evaluation</h1>
+            <p>Conversation Management & Analysis</p>
+        </div>
+
+        <div class="content">
+            <div class="section-title">
+                Conversation List
+            </div>
+            <div class="section-subtitle">
+                View and evaluate tutoring conversations. Click "View" to inspect a conversation or "Evaluate" to start the evaluation process.
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Type</th>
+                            <th>Scenario</th>
+                            <th>Session ID</th>
+                            <th colspan="2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conversations-table">
+                        <tr>
+                            <td colspan="6" class="empty-state">Loading conversations...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            Aravella Lousta • LLM Evaluation System
+        </div>
+    </div>
+
+    <script>
+        const PERSONA_NAMES = {
+            1: "Disengaged",
+            2: "Motivated",
+            3: "Frustrated",
+            4: "Wrong Answers"
+        };
+
+        async function loadConversations() {
+            try {
+                // Try to load conversation files
+                const conversationFiles = [
+                    "conversation_per_1_sc_1.json",
+                    "conversation_per_2_sc_1.json",
+                    "conversation_per_3_sc_1.json",
+                    "conversation_per_4_sc_1.json"
+                ];
+
+                const conversations = [];
+                console.log("Attempting to load conversations from files:", conversationFiles);
+                for (const file of conversationFiles) {
+                    try {
+                        const response = await fetch(`../../conversations/${file}`);
+                        if (!response.ok) continue;
+
+                        const data = await response.json();
+                        const personaNum = data.persona_number || "N/A";
+                        
+                        conversations.push({
+                            persona_number: personaNum,
+                            persona_name: PERSONA_NAMES[personaNum] || "Unknown",
+                            scenario_number: data.scenario_number || "N/A",
+                            session_id: data.session_id || "N/A"
+                        });
+                    } catch (err) {
+                        // File doesn't exist, continue
+                    }
+                }
+
+                if (conversations.length > 0) {
+                    displayConversations(conversations);
+                } else {
+                    showEmptyState();
+                }
+            } catch (err) {
+                console.error("Error loading conversations:", err);
+                showEmptyState();
+            }
+        }
+
+        function displayConversations(conversations) {
+            const tableBody = document.getElementById("conversations-table");
+            
+            tableBody.innerHTML = conversations.map(conv => `
+                <tr>
+                    <td>${conv.persona_name}</td>
+                    <td>${conv.scenario_number}</td>
+                    <td>${conv.session_id}</td>
+                    <td>
+                        <a href="conversation_viewer.html?session=${encodeURIComponent(conv.session_id)}" class="btn btn-view">
+                            View
+                        </a>
+                    </td>
+                    <td>
+                        <button class="btn btn-evaluate" onclick="startEvaluation('${conv.session_id}')">
+                            Evaluate
+                        </button>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function showEmptyState() {
+            const tableBody = document.getElementById("conversations-table");
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        No conversations found. Run simulations to generate conversations.
+                    </td>
+                </tr>
+            `;
+        }
+
+        function startEvaluation(sessionId) {
+            console.log("Starting evaluation for session:", sessionId);
+            alert("Evaluation process started for session: " + sessionId);
+        }
+
+        // Load conversations when page loads
+        window.addEventListener("DOMContentLoaded", loadConversations);
+    </script>
+</body>
+</html>

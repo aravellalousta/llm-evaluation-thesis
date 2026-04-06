@@ -2,6 +2,12 @@
 Main script for interactive LLM conversation.
 """
 
+import sys
+from pathlib import Path
+
+# Add core folder to path for imports
+sys.path.insert(0, str(Path(__file__).parent / "core"))
+
 from config import MODEL_NAME, SYSTEM_INSTRUCTION, CONVERSATION_END_SIGNAL
 from conversation_manager import ConversationManager
 from json_response_create import ConversationSaver, create_turn
