@@ -81,7 +81,7 @@
 
             for (const file of personaFiles) {
                 try {
-                    const response = await fetch(`../../conversations/${file}`);
+                    const response = await fetch(`conversations/${file}`);
                     if (!response.ok) continue;
 
                     const data = await response.json();
