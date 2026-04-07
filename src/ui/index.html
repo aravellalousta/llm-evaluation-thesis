@@ -96,16 +96,22 @@
             }
         }
 
-        function displayConversations(conversations) {
+        async function displayConversations(conversations) {
             const tableBody = document.getElementById("conversations-table");
             
-            tableBody.innerHTML = conversations.map(conv => {
-                const isEvaluated = isConversationEvaluated(conv.session_id);
+            tableBody.innerHTML = '';
+            
+            for (const conv of conversations) {
+                const isEvaluated = await isConversationEvaluated(conv.session_id);
                 const statusBadge = isEvaluated 
                     ? '<span class="badge badge-evaluated">Already Evaluated</span>'
                     : '<span class="badge badge-pending">Not Evaluated</span>';
                 
-                return `
+                const actionButton = isEvaluated
+                    ? `<button class="btn btn-view-evaluation" onclick="viewEvaluation('${conv.session_id}'); return false;">View Evaluation</button>`
+                    : `<a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-evaluate">Evaluate</a>`;
+                
+                const row = `
                     <tr>
                         <td>${conv.persona_name}</td>
                         <td>${conv.scenario_number}</td>
@@ -117,13 +123,12 @@
                             </a>
                         </td>
                         <td>
-                            <a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-evaluate">
-                                Evaluate
-                            </a>
+                            ${actionButton}
                         </td>
                     </tr>
                 `;
-            }).join("");
+                tableBody.insertAdjacentHTML('beforeend', row);
+            }
         }
 
         function showEmptyState() {
@@ -137,9 +142,249 @@
             `;
         }
 
-        function isConversationEvaluated(sessionId) {
-            const evaluatedSessions = JSON.parse(localStorage.getItem('evaluatedSessions') || '{}');
-            return evaluatedSessions[sessionId] !== undefined;
+        async function isConversationEvaluated(sessionId) {
+            // First check localStorage for cached evaluation
+            const storageKey = `evaluation_${sessionId}`;
+            if (localStorage.getItem(storageKey)) {
+                return true;
+            }
+            
+            // Then try to load from file
+            try {
+                const response = await fetch(`evaluations-responses/evaluation_${sessionId}.json`);
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Load and display evaluation in a modal
+        async function viewEvaluation(sessionId) {
+            try {
+                let evaluationData = null;
+                
+                // First try localStorage
+                const storageKey = `evaluation_${sessionId}`;
+                const cachedData = localStorage.getItem(storageKey);
+                if (cachedData) {
+                    evaluationData = JSON.parse(cachedData);
+                } else {
+                    // Try to load from file
+                    const response = await fetch(`evaluations-responses/evaluation_${sessionId}.json`);
+                    if (!response.ok) {
+                        alert('Evaluation file not found for this session.');
+                        return;
+                    }
+                    evaluationData = await response.json();
+                }
+
+                // Load conversation data for this session
+                const conversationData = await loadConversationBySessionId(sessionId);
+
+                displayEvaluationModal(evaluationData, conversationData);
+            } catch (error) {
+                console.error('Error loading evaluation:', error);
+                alert('Failed to load evaluation data.');
+            }
+        }
+
+        // Load conversation by session ID
+        async function loadConversationBySessionId(sessionId) {
+            const conversationFiles = [
+                "conversation_per_1_sc_1.json",
+                "conversation_per_2_sc_1.json",
+                "conversation_per_3_sc_1.json",
+                "conversation_per_4_sc_1.json"
+            ];
+
+            for (const file of conversationFiles) {
+                try {
+                    const response = await fetch(`conversations/${file}`);
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    if (data.session_id === sessionId) {
+                        return data;
+                    }
+                } catch (err) {
+                    continue;
+                }
+            }
+
+            return null;
+        }
+
+        // Display evaluation in a read-only modal
+        function displayEvaluationModal(evaluationData, conversationData) {
+            // Create modal HTML
+            const modalHtml = `
+                <div id="evaluationModal" class="eval-modal" onclick="closeEvaluationModal(event)">
+                    <div class="eval-modal-content" onclick="event.stopPropagation()">
+                        <div class="eval-modal-header">
+                            <h2>Evaluation Details</h2>
+                            <button class="eval-modal-close" onclick="closeEvaluationModal()">×</button>
+                        </div>
+                        <div class="eval-modal-body">
+                            <div class="eval-info-section">
+                                <div class="eval-info-item">
+                                    <strong>Session ID:</strong>
+                                    <span>${evaluationData.session_id}</span>
+                                </div>
+                                <div class="eval-info-item">
+                                    <strong>Evaluated At:</strong>
+                                    <span>${new Date(evaluationData.timestamp).toLocaleString()}</span>
+                                </div>
+                            </div>
+                            
+                            <div id="evaluationTurnsContainer" class="eval-turns-container"></div>
+                        </div>
+                        <div class="eval-modal-footer">
+                            <button class="btn btn-primary" onclick="closeEvaluationModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if present
+            const existingModal = document.getElementById('evaluationModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Load rubric data to display dimension names
+            loadRubricForDisplay(evaluationData, conversationData);
+        }
+
+        async function loadRubricForDisplay(evaluationData, conversationData) {
+            try {
+                const response = await fetch('rubric/evaluation_rubric.json');
+                if (!response.ok) {
+                    console.error('Failed to load rubric');
+                    return;
+                }
+
+                const rubricFile = await response.json();
+                const dimensions = rubricFile.rubric.dimensions || [];
+
+                const rubricMap = {};
+                dimensions.forEach(dim => {
+                    rubricMap[dim.id] = {
+                        category: dim.category,
+                        name: dim.name,
+                        question: dim.question
+                    };
+                });
+
+                renderEvaluationTurns(evaluationData, rubricMap, conversationData);
+            } catch (error) {
+                console.error('Error loading rubric:', error);
+            }
+        }
+
+        function renderEvaluationTurns(evaluationData, rubricMap, conversationData) {
+            const container = document.getElementById('evaluationTurnsContainer');
+            container.innerHTML = '';
+
+            const turnEvaluations = evaluationData.turn_evaluations || {};
+            const turns = conversationData && conversationData.turns ? conversationData.turns : [];
+
+            Object.entries(turnEvaluations).forEach(([turnIndex, turnData]) => {
+                const turnNumber = parseInt(turnIndex) + 1;
+                const turnHtml = document.createElement('div');
+                turnHtml.className = 'eval-turn-section';
+                turnHtml.innerHTML = `<h3>Turn ${turnNumber}</h3>`;
+
+                // Add conversation text if available
+                const studentIndex = turnIndex * 2;
+                const tutorIndex = turnIndex * 2 + 1;
+
+                const studentTurn = turns[studentIndex] || {};
+                const tutorTurn = turns[tutorIndex] || {};
+
+                if (studentTurn.text || tutorTurn.text) {
+                    const conversationDiv = document.createElement('div');
+                    conversationDiv.className = 'eval-conversation-display';
+
+                    if (studentTurn.text) {
+                        const studentMsg = document.createElement('div');
+                        studentMsg.className = 'eval-message student-message';
+                        studentMsg.innerHTML = `
+                            <div class="eval-message-header">Student</div>
+                            <div class="eval-message-text">${escapeHtml(studentTurn.text)}</div>
+                        `;
+                        conversationDiv.appendChild(studentMsg);
+                    }
+
+                    if (tutorTurn.text) {
+                        const tutorMsg = document.createElement('div');
+                        tutorMsg.className = 'eval-message tutor-message';
+                        tutorMsg.innerHTML = `
+                            <div class="eval-message-header">Tutor</div>
+                            <div class="eval-message-text">${escapeHtml(tutorTurn.text)}</div>
+                        `;
+                        conversationDiv.appendChild(tutorMsg);
+                    }
+
+                    turnHtml.appendChild(conversationDiv);
+                }
+
+                // Add a divider between conversation and dimensions
+                if (studentTurn.text || tutorTurn.text) {
+                    const divider = document.createElement('div');
+                    divider.className = 'eval-section-divider';
+                    turnHtml.appendChild(divider);
+                }
+
+                // Add dimension scores
+                Object.entries(turnData).forEach(([dimensionId, score]) => {
+                    const dimension = rubricMap[dimensionId];
+                    const scoreLabels = {
+                        '1': 'Poor',
+                        '2': 'Fair',
+                        '3': 'Good',
+                        '4': 'Very Good',
+                        '5': 'Excellent'
+                    };
+
+                    const row = document.createElement('div');
+                    row.className = 'eval-dimension-row';
+                    row.innerHTML = `
+                        <div class="eval-dimension-info">
+                            <div class="eval-dim-header">
+                                <span class="eval-dim-id">${dimensionId}</span>
+                                <span class="eval-dim-category">${dimension ? dimension.category : 'N/A'}</span>
+                            </div>
+                            <div class="eval-dim-name">${dimension ? dimension.name : 'Unknown Dimension'}</div>
+                        </div>
+                        <div class="eval-score">
+                            <span class="eval-score-number">${score}</span>
+                            <span class="eval-score-label">${scoreLabels[score] || 'N/A'}</span>
+                        </div>
+                    `;
+                    turnHtml.appendChild(row);
+                });
+
+                container.appendChild(turnHtml);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function closeEvaluationModal(event) {
+            // Close if clicking outside or on close button
+            if (!event || event.target.id === 'evaluationModal' || event.target.classList.contains('eval-modal-close')) {
+                const modal = document.getElementById('evaluationModal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
         }
 
         // Load conversations when page loads

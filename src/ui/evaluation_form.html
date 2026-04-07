@@ -430,11 +430,8 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 
-                // Generate filename with timestamp
-                const now = new Date();
-                const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
-                                 now.toISOString().split('T')[1].replace(/[:.]/g, '-').split('Z')[0];
-                const filename = `response_${timestamp}.json`;
+                // Generate filename using session ID instead of timestamp
+                const filename = `evaluation_${sessionId}.json`;
                 
                 link.href = url;
                 link.download = filename;
@@ -447,12 +444,27 @@
                 // Clean up
                 URL.revokeObjectURL(url);
                 
+                // Also save to sessionStorage/localStorage for immediate access in the evaluation view
+                saveEvaluationData(responseData);
+                
                 // Show completion modal
                 showCompletionModal(responseData);
                 
             } catch (error) {
                 console.error('Error downloading evaluation:', error);
                 displayError('Failed to download evaluation: ' + error.message);
+            }
+        }
+
+        // Save evaluation data for retrieval
+        function saveEvaluationData(responseData) {
+            try {
+                // Save with session ID as key
+                const storageKey = `evaluation_${sessionId}`;
+                localStorage.setItem(storageKey, JSON.stringify(responseData));
+            } catch (error) {
+                console.error('Error saving evaluation to localStorage:', error);
+                // Silently fail - download is already saving the file
             }
         }
 
