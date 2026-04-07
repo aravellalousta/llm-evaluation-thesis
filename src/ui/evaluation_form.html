@@ -77,7 +77,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <p style="color: #666; font-size: 0.9em;">Redirecting to homepage in 3 seconds...</p>
+                    <a href="index.html" class="btn btn-primary">Return to Homepage</a>
                 </div>
             </div>
         </div>
@@ -135,6 +135,14 @@
         // Initialize the page
         async function initialize() {
             try {
+                // Check if we just completed an evaluation and the page reloaded
+                if (sessionStorage.getItem('justCompletedEvaluation')) {
+                    sessionStorage.removeItem('justCompletedEvaluation');
+                    // Redirect to homepage immediately
+                    window.location.replace('index.html');
+                    return;
+                }
+
                 // Load rubric data first
                 const rubricLoaded = await loadRubricData();
                 if (!rubricLoaded) {
@@ -476,16 +484,17 @@
             };
             localStorage.setItem('evaluatedSessions', JSON.stringify(evaluatedSessions));
 
-            // Automatically redirect to homepage after 3.5 seconds
+            // Mark that we just completed so if page reloads, we redirect immediately
+            sessionStorage.setItem('justCompletedEvaluation', 'true');
+
+            // Try to automatically redirect to homepage after 3 seconds (fallback to manual button)
             setTimeout(() => {
                 try {
                     window.location.replace('index.html');
                 } catch (e) {
-                    console.error('Redirect failed:', e);
-                    // Fallback: try alternative redirect methods
-                    window.location = 'index.html';
+                    console.error('Auto-redirect failed:', e);
                 }
-            }, 3500);
+            }, 3000);
         }
 
         // Utility: escape HTML
