@@ -9,12 +9,12 @@ from google.genai import types
 from typing import List, Dict
 
 
-class ConversationManager:
+class GeminiConversationManager:
     """Manages conversation state and API calls with Google Gemini."""
 
     def __init__(self, model: str, system_instruction: str):
         """
-        Initialize the ConversationManager.
+        Initialize the GeminiConversationManager.
 
         Args:
             model: Model name (e.g., 'models/gemini-2.5-flash')
