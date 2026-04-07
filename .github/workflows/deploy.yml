@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r src/ui/. _site/
-          cp -r conversations _site/conversations
+          cp -r src/ui/conversations _site/conversations
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
