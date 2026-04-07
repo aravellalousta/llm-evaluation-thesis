@@ -94,7 +94,7 @@
         // Load rubric data from JSON file
         async function loadRubricData() {
             try {
-                const response = await fetch('../../rubric/evaluation_rubric.json');
+                const response = await fetch('rubric/evaluation_rubric.json');
                 if (!response.ok) {
                     throw new Error('Failed to load rubric file');
                 }
