@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Turn-by-Turn Evaluation</title>
+    <link rel="stylesheet" href="styles/evaluation.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Turn-by-Turn Evaluation</h1>
+            <p>Evaluate each turn of the tutoring conversation</p>
+            <div class="session-info">
+                <div class="session-info-item"><strong>Session ID:</strong> <span id="sessionId">Loading...</span></div>
+                <div class="session-info-item"><strong>Persona:</strong> <span id="personaName">Loading...</span></div>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <!-- Left Panel: Conversation -->
+            <div class="conversation-panel">
+                <div class="panel-title">Conversation Turn</div>
+                <div class="turn-info">
+                    <div class="turn-counter">Turn <span id="currentTurn">1</span> of <span id="totalTurns">0</span></div>
+                    <div class="turn-progress" id="progressText">0%</div>
+                </div>
+                <div class="conversation-display" id="conversationDisplay">
+                    <div class="loading">Loading conversation...</div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Evaluation Form -->
+            <div class="evaluation-panel">
+                <div class="panel-title">Evaluation</div>
+                
+                <div id="successMessage" class="success-message">
+                    ✓ Turn evaluation saved successfully
+                </div>
+
+                <div class="instruction">
+                    <strong>Instructions:</strong> Rate the tutor's response for this turn across all dimensions using the 1-5 scale.
+                </div>
+
+                <div class="form-scroll-container">
+                    <form id="evaluationForm">
+                        <!-- Dimensions will be dynamically inserted here -->
+                    </form>
+                </div>
+                <div id="errorMessage" class="error-message"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-prev" id="btnPrev" disabled>← Previous</button>
+                    <button type="button" class="btn btn-next" id="btnNext">Next →</button>
+                    <button type="submit" class="btn btn-submit" id="btnSubmit" style="display: none;">↓ Save & Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Modal -->
+        <div id="completionModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✓ Evaluation Complete!</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Your evaluation for this conversation has been successfully saved.</p>
+                    <div class="completion-details">
+                        <div class="detail-item">
+                            <strong>Session ID:</strong> <span id="modalSessionId"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Total Turns Evaluated:</strong> <span id="modalTotalTurns"></span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Completed At:</strong> <span id="modalTimestamp"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <p style="color: #666; font-size: 0.9em;">Redirecting to homepage in 3 seconds...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let rubricData = null;
+        let conversationData = null;
+        let currentTurnIndex = 0;
+        let evaluations = {}; // Store evaluations for all turns
+        let sessionId = null;
+
+        // Load rubric data from JSON file
+        async function loadRubricData() {
+            try {
+                const response = await fetch('../../rubric/evaluation_rubric.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load rubric file');
+                }
+
+                const rubricFile = await response.json();
+                const dimensions = rubricFile.rubric.dimensions || [];
+
+                // Convert dimensions array to object format
+                rubricData = {};
+                dimensions.forEach(dim => {
+                    rubricData[dim.id] = {
+                        category: dim.category,
+                        name: dim.name,
+                        question: dim.question,
+                        anchors: dim.anchors
+                    };
+                });
+
+                return true;
+            } catch (error) {
+                console.error('Error loading rubric:', error);
+                return false;
+            }
+        }
+
+        // Get Session ID from URL parameters
+        function getSessionId() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('sessionId');
+            
+            if (!id) {
+                throw new Error('Session ID is required. Please access this page from the evaluation link.');
+            }
+            
+            return id.trim();
+        }
+
+        // Initialize the page
+        async function initialize() {
+            try {
+                // Load rubric data first
+                const rubricLoaded = await loadRubricData();
+                if (!rubricLoaded) {
+                    displayError('Failed to load rubric data. Please refresh the page.');
+                    return;
+                }
+
+                sessionId = getSessionId();
+                document.getElementById('sessionId').textContent = sessionId;
+
+                // Load conversation
+                conversationData = await loadConversation(sessionId);
+                
+                if (!conversationData) {
+                    displayError('Conversation not found. Please check the Session ID.');
+                    return;
+                }
+
+                // Update header info
+                const personaNum = conversationData.persona_number || "N/A";
+                const personaNames = {
+                    1: "Persona 1 (Disengaged Student)",
+                    2: "Persona 2 (Motivated Student)",
+                    3: "Persona 3 (Frustrated Student)",
+                    4: "Persona 4 (Wrong Answers)"
+                };
+                document.getElementById('personaName').textContent = personaNames[personaNum] || "Unknown";
+
+                // Calculate turns (each turn = student + tutor pair)
+                const turns = conversationData.turns || [];
+                const totalTurns = Math.floor(turns.length / 2);
+                document.getElementById('totalTurns').textContent = totalTurns;
+
+                // Initialize evaluations object
+                for (let i = 0; i < totalTurns; i++) {
+                    evaluations[i] = {};
+                }
+
+                // Create form sections
+                createFormSections();
+
+                // Display first turn
+                displayTurn(0);
+
+                // Setup event listeners
+                document.getElementById('btnPrev').addEventListener('click', previousTurn);
+                document.getElementById('btnNext').addEventListener('click', nextTurn);
+                document.getElementById('btnSubmit').addEventListener('click', submitAllEvaluations);
+                document.getElementById('evaluationForm').addEventListener('submit', (e) => e.preventDefault());
+
+            } catch (error) {
+                displayError('Failed to initialize: ' + error.message);
+            }
+        }
+
+        // Load conversation JSON
+        async function loadConversation(sessionId) {
+            const conversationFiles = [
+                "conversation_per_1_sc_1.json",
+                "conversation_per_2_sc_1.json",
+                "conversation_per_3_sc_1.json",
+                "conversation_per_4_sc_1.json"
+            ];
+
+            for (const file of conversationFiles) {
+                try {
+                    const response = await fetch(`conversations/${file}`);
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    if (data.session_id === sessionId) {
+                        return data;
+                    }
+                } catch (err) {
+                    continue;
+                }
+            }
+
+            return null;
+        }
+
+        // Create form sections for each dimension
+        function createFormSections() {
+            const form = document.getElementById('evaluationForm');
+            form.innerHTML = '';
+
+            Object.entries(rubricData).forEach(([dimensionId, dimension]) => {
+                const section = createDimensionSection(dimensionId, dimension);
+                form.appendChild(section);
+            });
+        }
+
+        // Create HTML for a dimension section
+        function createDimensionSection(dimensionId, dimension) {
+            const section = document.createElement('div');
+            section.className = 'dimension-section';
+
+            let anchorsHtml = '<div class="anchors">';
+            Object.entries(dimension.anchors).forEach(([score, text]) => {
+                anchorsHtml += `
+                    <div class="anchor-item">
+                        <span class="anchor-score">${score}</span>
+                        <span class="anchor-text">${text}</span>
+                    </div>
+                `;
+            });
+            anchorsHtml += '</div>';
+
+            let selectedValue = '';
+            if (evaluations[currentTurnIndex] && evaluations[currentTurnIndex][dimensionId]) {
+                selectedValue = evaluations[currentTurnIndex][dimensionId];
+            }
+
+            section.innerHTML = `
+                <div class="dimension-header">
+                    <div class="dimension-id">${dimensionId}</div>
+                    <div class="dimension-category">${dimension.category}</div>
+                    <div class="dimension-name">${dimension.name}</div>
+                    <div class="dimension-question">${dimension.question}</div>
+                </div>
+
+                <div class="scale-container">
+                    <label class="scale-label">Rating:</label>
+                    <div class="scale-options">
+                        <div class="scale-option">
+                            <input type="radio" id="${dimensionId}_1" name="${dimensionId}" value="1" ${selectedValue === '1' ? 'checked' : ''}>
+                            <label for="${dimensionId}_1">1<br><small>Poor</small></label>
+                        </div>
+                        <div class="scale-option">
+                            <input type="radio" id="${dimensionId}_2" name="${dimensionId}" value="2" ${selectedValue === '2' ? 'checked' : ''}>
+                            <label for="${dimensionId}_2">2<br><small>Fair</small></label>
+                        </div>
+                        <div class="scale-option">
+                            <input type="radio" id="${dimensionId}_3" name="${dimensionId}" value="3" ${selectedValue === '3' ? 'checked' : ''}>
+                            <label for="${dimensionId}_3">3<br><small>Good</small></label>
+                        </div>
+                        <div class="scale-option">
+                            <input type="radio" id="${dimensionId}_4" name="${dimensionId}" value="4" ${selectedValue === '4' ? 'checked' : ''}>
+                            <label for="${dimensionId}_4">4<br><small>Very Good</small></label>
+                        </div>
+                        <div class="scale-option">
+                            <input type="radio" id="${dimensionId}_5" name="${dimensionId}" value="5" ${selectedValue === '5' ? 'checked' : ''}>
+                            <label for="${dimensionId}_5">5<br><small>Excellent</small></label>
+                        </div>
+                    </div>
+                </div>
+
+                ${anchorsHtml}
+            `;
+
+            return section;
+        }
+
+        // Display a specific turn
+        function displayTurn(turnIndex) {
+            currentTurnIndex = turnIndex;
+            const turns = conversationData.turns || [];
+            const totalTurns = Math.floor(turns.length / 2);
+
+            // Update turn counter
+            document.getElementById('currentTurn').textContent = turnIndex + 1;
+            const progress = Math.round(((turnIndex + 1) / totalTurns) * 100);
+            document.getElementById('progressText').textContent = progress + '%';
+
+            // Get student and tutor messages for this turn
+            const studentIndex = turnIndex * 2;
+            const tutorIndex = turnIndex * 2 + 1;
+
+            const studentTurn = turns[studentIndex] || {};
+            const tutorTurn = turns[tutorIndex] || {};
+
+            // Build conversation display
+            let html = '';
+            
+            if (studentTurn.text) {
+                html += `
+                    <div class="message student-message">
+                        <div class="message-header">Student</div>
+                        <div class="message-text">${escapeHtml(studentTurn.text)}</div>
+                    </div>
+                `;
+            }
+
+            if (tutorTurn.text) {
+                html += `
+                    <div class="message tutor-message">
+                        <div class="message-header">Tutor</div>
+                        <div class="message-text">${escapeHtml(tutorTurn.text)}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('conversationDisplay').innerHTML = html || '<div class="loading">No messages found for this turn.</div>';
+
+            // Recreate form with saved values
+            createFormSections();
+
+            // Update button states
+            const btnPrev = document.getElementById('btnPrev');
+            const btnNext = document.getElementById('btnNext');
+            const btnSubmit = document.getElementById('btnSubmit');
+
+            btnPrev.disabled = turnIndex === 0;
+
+            if (turnIndex === totalTurns - 1) {
+                btnNext.style.display = 'none';
+                btnSubmit.style.display = 'block';
+            } else {
+                btnNext.style.display = 'block';
+                btnSubmit.style.display = 'none';
+            }
+
+            // Clear messages
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        // Save current turn evaluations
+        function saveCurrentEvaluation() {
+            const formData = new FormData(document.getElementById('evaluationForm'));
+            const evals = evaluations[currentTurnIndex];
+
+            Object.keys(rubricData).forEach(dimensionId => {
+                const value = formData.get(dimensionId);
+                if (value) {
+                    evals[dimensionId] = value;
+                }
+            });
+
+            return Object.keys(rubricData).every(dim => evals[dim]);
+        }
+
+        // Navigate to previous turn
+        function previousTurn() {
+            if (currentTurnIndex > 0) {
+                if (saveCurrentEvaluation()) {
+                    displayTurn(currentTurnIndex - 1);
+                } else {
+                    displayError('Please complete all dimensions before moving to the previous turn.');
+                }
+            }
+        }
+
+        // Navigate to next turn
+        function nextTurn() {
+            if (saveCurrentEvaluation()) {
+                const totalTurns = Math.floor((conversationData.turns || []).length / 2);
+                if (currentTurnIndex < totalTurns - 1) {
+                    displayTurn(currentTurnIndex + 1);
+                    showSuccess('Turn evaluation saved. Moving to next turn...');
+                }
+            } else {
+                displayError('Please complete all dimensions before moving to the next turn.');
+            }
+        }
+
+        // Submit all evaluations
+        function submitAllEvaluations() {
+            if (!saveCurrentEvaluation()) {
+                displayError('Please complete all dimensions before submitting.');
+                return;
+            }
+
+            const responseData = {
+                session_id: sessionId,
+                persona_number: conversationData.persona_number,
+                timestamp: new Date().toISOString(),
+                turn_evaluations: evaluations
+            };
+
+            // Download evaluation as JSON file
+            downloadEvaluation(responseData);
+        }
+
+        // Download evaluation as JSON file
+        function downloadEvaluation(responseData) {
+            try {
+                // Create JSON string
+                const jsonString = JSON.stringify(responseData, null, 2);
+                
+                // Create Blob
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                
+                // Create temporary download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                
+                // Generate filename with timestamp
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                                 now.toISOString().split('T')[1].replace(/[:.]/g, '-').split('Z')[0];
+                const filename = `response_${timestamp}.json`;
+                
+                link.href = url;
+                link.download = filename;
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                URL.revokeObjectURL(url);
+                
+                // Show completion modal
+                showCompletionModal(responseData);
+                
+            } catch (error) {
+                console.error('Error downloading evaluation:', error);
+                displayError('Failed to download evaluation: ' + error.message);
+            }
+        }
+
+        // Show completion modal
+        function showCompletionModal(responseData) {
+            const modal = document.getElementById('completionModal');
+            const totalTurns = Math.floor((conversationData.turns || []).length / 2);
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            document.getElementById('modalSessionId').textContent = sessionId;
+            document.getElementById('modalTotalTurns').textContent = totalTurns;
+            document.getElementById('modalTimestamp').textContent = timeString;
+
+            modal.style.display = 'flex';
+
+            // Save to localStorage to track completion status
+            const evaluatedSessions = JSON.parse(localStorage.getItem('evaluatedSessions') || '{}');
+            evaluatedSessions[sessionId] = {
+                completedAt: new Date().toISOString()
+            };
+            localStorage.setItem('evaluatedSessions', JSON.stringify(evaluatedSessions));
+
+            // Automatically redirect to homepage after 3.5 seconds
+            setTimeout(() => {
+                try {
+                    window.location.replace('index.html');
+                } catch (e) {
+                    console.error('Redirect failed:', e);
+                    // Fallback: try alternative redirect methods
+                    window.location = 'index.html';
+                }
+            }, 3500);
+        }
+
+        // Utility: escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Utility: display error
+        function displayError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>

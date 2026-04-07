@@ -28,6 +28,7 @@
                             <th>Student Type</th>
                             <th>Scenario</th>
                             <th>Session ID</th>
+                            <th>Status</th>
                             <th colspan="2">Actions</th>
                         </tr>
                     </thead>
@@ -98,39 +99,47 @@
         function displayConversations(conversations) {
             const tableBody = document.getElementById("conversations-table");
             
-            tableBody.innerHTML = conversations.map(conv => `
-                <tr>
-                    <td>${conv.persona_name}</td>
-                    <td>${conv.scenario_number}</td>
-                    <td>${conv.session_id}</td>
-                    <td>
-                        <a href="conversation_viewer.html?session=${encodeURIComponent(conv.session_id)}" class="btn btn-view">
-                            View
-                        </a>
-                    </td>
-                    <td>
-                        <button class="btn btn-evaluate" onclick="startEvaluation('${conv.session_id}')">
-                            Evaluate
-                        </button>
-                    </td>
-                </tr>
-            `).join("");
+            tableBody.innerHTML = conversations.map(conv => {
+                const isEvaluated = isConversationEvaluated(conv.session_id);
+                const statusBadge = isEvaluated 
+                    ? '<span class="badge badge-evaluated">Already Evaluated</span>'
+                    : '<span class="badge badge-pending">Not Evaluated</span>';
+                
+                return `
+                    <tr>
+                        <td>${conv.persona_name}</td>
+                        <td>${conv.scenario_number}</td>
+                        <td>${conv.session_id}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <a href="conversation_viewer.html?session=${encodeURIComponent(conv.session_id)}" class="btn btn-view">
+                                View
+                            </a>
+                        </td>
+                        <td>
+                            <a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-evaluate">
+                                Evaluate
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
         }
 
         function showEmptyState() {
             const tableBody = document.getElementById("conversations-table");
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="7" class="empty-state">
                         No conversations found. Run simulations to generate conversations.
                     </td>
                 </tr>
             `;
         }
 
-        function startEvaluation(sessionId) {
-            console.log("Starting evaluation for session:", sessionId);
-            alert("Evaluation process started for session: " + sessionId);
+        function isConversationEvaluated(sessionId) {
+            const evaluatedSessions = JSON.parse(localStorage.getItem('evaluatedSessions') || '{}');
+            return evaluatedSessions[sessionId] !== undefined;
         }
 
         // Load conversations when page loads
