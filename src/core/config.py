@@ -1,6 +1,7 @@
 from pathlib import Path
 
-MODEL_NAME = "models/gemini-2.5-flash"
+GEMINI_MODEL_NAME = "models/gemini-2.5-flash"
+OPENAI_MODEL_NAME = "gpt-4o"
 
 
 def load_system_instruction(prompt_name: str) -> str:
