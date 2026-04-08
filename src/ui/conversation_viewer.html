@@ -20,6 +20,7 @@
             <div class="tab-meta">
                 <div><strong>Session ID:</strong> <span id="session-id">Loading...</span></div>
                 <div><strong>Total Turns:</strong> <span id="total-turns">0</span></div>
+                <div><strong>Model:</strong> <span id="model-name">Loading...</span></div>
             </div>
         </div>
 
@@ -62,7 +63,6 @@
                     showError("Conversation not found");
                     return;
                 }
-
                 displayConversation(conversationData);
             } catch (err) {
                 console.error("Error loading conversation:", err);
@@ -73,10 +73,11 @@
         async function findConversationBySessionId(sessionId) {
             // Try to load known conversation files
             const personaFiles = [
-                "conversation_per_1_sc_1.json",
-                "conversation_per_2_sc_1.json",
-                "conversation_per_3_sc_1.json",
-                "conversation_per_4_sc_1.json"
+                "conversation_per_1_sc_1_gemini.json",
+                "conversation_per_2_sc_1_gemini.json",
+                "conversation_per_3_sc_1_gemini.json",
+                "conversation_per_4_sc_1_gemini.json",
+                "conversation_per_1_sc_1_openai.json"
             ];
 
             for (const file of personaFiles) {
@@ -101,10 +102,12 @@
             const personaName = PERSONA_NAMES[personaNum] || "Unknown";
             const sessionId = conversation.session_id || "N/A";
             const turns = conversation.turns || [];
+            const modelName = conversation.model_used || "Unknown";
 
             // Update header
             document.getElementById("persona-name").textContent = personaName;
             document.getElementById("session-id").textContent = sessionId;
+            document.getElementById("model-name").textContent = modelName;
             
             // Calculate number of turns (divide by 2 since each turn has student + tutor)
             const turnCount = Math.floor(turns.length / 2);

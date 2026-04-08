@@ -27,6 +27,7 @@
                         <tr>
                             <th>Student Type</th>
                             <th>Scenario</th>
+                            <th>Model</th>
                             <th>Session ID</th>
                             <th>Status</th>
                             <th colspan="2">Actions</th>
@@ -58,10 +59,11 @@
             try {
                 // Try to load conversation files
                 const conversationFiles = [
-                    "conversation_per_1_sc_1.json",
-                    "conversation_per_2_sc_1.json",
-                    "conversation_per_3_sc_1.json",
-                    "conversation_per_4_sc_1.json"
+                    "conversation_per_1_sc_1_gemini.json",
+                    "conversation_per_2_sc_1_gemini.json",
+                    "conversation_per_3_sc_1_gemini.json",
+                    "conversation_per_4_sc_1_gemini.json",
+                    "conversation_per_1_sc_1_openai.json"
                 ];
 
                 const conversations = [];
@@ -74,11 +76,15 @@
                         const data = await response.json();
                         const personaNum = data.persona_number || "N/A";
                         
+                        // Extract model from filename
+                        const model = extractModelFromFilename(file);
+                        
                         conversations.push({
                             persona_number: personaNum,
                             persona_name: PERSONA_NAMES[personaNum] || "Unknown",
                             scenario_number: data.scenario_number || "N/A",
-                            session_id: data.session_id || "N/A"
+                            session_id: data.session_id || "N/A",
+                            model: model
                         });
                     } catch (err) {
                         // File doesn't exist, continue
@@ -94,6 +100,12 @@
                 console.error("Error loading conversations:", err);
                 showEmptyState();
             }
+        }
+
+        function extractModelFromFilename(filename) {
+            if (filename.includes('_openai')) return 'OpenAI GPT-4o';
+            if (filename.includes('_gemini')) return 'Gemini 2.5 Flash';
+            return 'Unknown';
         }
 
         async function displayConversations(conversations) {
@@ -115,6 +127,7 @@
                     <tr>
                         <td>${conv.persona_name}</td>
                         <td>${conv.scenario_number}</td>
+                        <td>${conv.model}</td>
                         <td>${conv.session_id}</td>
                         <td>${statusBadge}</td>
                         <td>
@@ -191,10 +204,11 @@
         // Load conversation by session ID
         async function loadConversationBySessionId(sessionId) {
             const conversationFiles = [
-                "conversation_per_1_sc_1.json",
-                "conversation_per_2_sc_1.json",
-                "conversation_per_3_sc_1.json",
-                "conversation_per_4_sc_1.json"
+                "conversation_per_1_sc_1_openai.json",
+                "conversation_per_1_sc_1_gemini.json",
+                "conversation_per_2_sc_1_gemini.json",
+                "conversation_per_3_sc_1_gemini.json",
+                "conversation_per_4_sc_1_gemini.json"
             ];
 
             for (const file of conversationFiles) {

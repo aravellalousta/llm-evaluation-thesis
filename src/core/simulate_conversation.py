@@ -95,7 +95,7 @@ def simulate_tutoring_session(
         conversation.append({"role": "student", "text": student_response})
 
     return {
-        "session_id": str(uuid.uuid4()),
+        "session_id": str(uuid.uuid4())[:8],
         "persona_number": persona_num,
         "persona_name": persona_data["name"],
         "scenario_number": scenario_num,
