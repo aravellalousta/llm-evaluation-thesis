@@ -21,6 +21,38 @@
                 View and evaluate tutoring conversations. Click "View Conversation" to inspect a conversation or "Evaluate" to start the evaluation process.
             </div>
 
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="persona-filter">Student Type:</label>
+                    <select id="persona-filter" onchange="applyFilters()">
+                        <option value="">All Personas</option>
+                        <option value="1">Disengaged</option>
+                        <option value="2">Motivated</option>
+                        <option value="3">Frustrated</option>
+                        <option value="4">Wrong Answers</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="scenario-filter">Scenario:</label>
+                    <select id="scenario-filter" onchange="applyFilters()">
+                        <option value="">All Scenarios</option>
+                        <option value="1">Scenario 1</option>
+                        <option value="2">Scenario 2</option>
+                        <option value="3">Scenario 3</option>
+                        <option value="4">Scenario 4</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="model-filter">Model:</label>
+                    <select id="model-filter" onchange="applyFilters()">
+                        <option value="">All Models</option>
+                        <option value="OpenAI GPT-4o">OpenAI GPT-4o</option>
+                        <option value="Gemini 2.5 Flash">Gemini 2.5 Flash</option>
+                    </select>
+                </div>
+                <button class="btn btn-reset-filters" onclick="resetFilters()">Reset Filters</button>
+            </div>
+
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -54,6 +86,9 @@
             3: "Frustrated",
             4: "Wrong Answers"
         };
+
+        // Global variable to store all loaded conversations
+        let allConversations = [];
 
         async function loadConversations() {
             try {
@@ -106,7 +141,8 @@
                 }
 
                 if (conversations.length > 0) {
-                    displayConversations(conversations);
+                    allConversations = conversations;
+                    applyFilters();
                 } else {
                     showEmptyState();
                 }
@@ -126,6 +162,11 @@
             const tableBody = document.getElementById("conversations-table");
             
             tableBody.innerHTML = '';
+            
+            if (conversations.length === 0) {
+                showEmptyState();
+                return;
+            }
             
             for (const conv of conversations) {
                 const isEvaluated = await isConversationEvaluated(conv.session_id);
@@ -156,6 +197,44 @@
                 `;
                 tableBody.insertAdjacentHTML('beforeend', row);
             }
+        }
+
+        function applyFilters() {
+            const personaFilter = document.getElementById('persona-filter').value;
+            const scenarioFilter = document.getElementById('scenario-filter').value;
+            const modelFilter = document.getElementById('model-filter').value;
+
+            let filteredConversations = allConversations;
+
+            // Apply persona filter
+            if (personaFilter) {
+                filteredConversations = filteredConversations.filter(conv => 
+                    conv.persona_number === parseInt(personaFilter)
+                );
+            }
+
+            // Apply scenario filter
+            if (scenarioFilter) {
+                filteredConversations = filteredConversations.filter(conv => 
+                    conv.scenario_number === parseInt(scenarioFilter)
+                );
+            }
+
+            // Apply model filter
+            if (modelFilter) {
+                filteredConversations = filteredConversations.filter(conv => 
+                    conv.model === modelFilter
+                );
+            }
+
+            displayConversations(filteredConversations);
+        }
+
+        function resetFilters() {
+            document.getElementById('persona-filter').value = '';
+            document.getElementById('scenario-filter').value = '';
+            document.getElementById('model-filter').value = '';
+            applyFilters();
         }
 
         function showEmptyState() {
