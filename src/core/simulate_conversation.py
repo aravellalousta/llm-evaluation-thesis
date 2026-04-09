@@ -181,7 +181,7 @@ def main():
 
         for persona_num in [1, 2, 3, 4]:
             print(
-                f"Running simulation for {PERSONAS[persona_num]['name']} (Scenario 1)..."
+                f"Running simulation for {PERSONAS[persona_num]['name']} (Scenario 4)"
             )
 
             try:
@@ -189,7 +189,7 @@ def main():
                 conversation_data = simulate_tutoring_session(
                     persona_num=persona_num,
                     num_turns=8,
-                    scenario_num=1,
+                    scenario_num=4,
                     model_type=model_name,
                 )
 
@@ -197,7 +197,7 @@ def main():
                 saved_path = save_conversation_to_json(
                     conversation_data,
                     persona_num,
-                    scenario_num=1,
+                    scenario_num=4,
                     model_used=model_name,
                 )
                 print(f"  ✓ Saved to {saved_path}")
@@ -215,3 +215,7 @@ def main():
     print(f"Total conversations generated: {len(all_conversations)}")
     print(f"Total files saved: {len(saved_files)}")
     print(f"{'='*60}")
+
+
+if __name__ == "__main__":
+    main()
