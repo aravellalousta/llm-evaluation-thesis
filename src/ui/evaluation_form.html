@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutor Turn-by-Turn Evaluation</title>
     <link rel="stylesheet" href="styles/evaluation.css">
+    <script src="shared.js"></script>
 </head>
 <body>
     <div class="container">
@@ -200,29 +201,7 @@
 
         // Load conversation JSON
         async function loadConversation(sessionId) {
-            const conversationFiles = [
-                "conversation_per_2_sc_1_gemini.json",
-                "conversation_per_3_sc_1_gemini.json",
-                "conversation_per_4_sc_1_gemini.json",
-                "conversation_per_1_sc_1_openai.json",
-                "conversation_per_1_sc_2_openai.json",
-                "conversation_per_1_sc_3_openai.json",
-                "conversation_per_1_sc_4_openai.json",
-                "conversation_per_2_sc_1_openai.json",
-                "conversation_per_2_sc_2_openai.json",
-                "conversation_per_2_sc_3_openai.json",
-                "conversation_per_2_sc_4_openai.json",
-                "conversation_per_3_sc_1_openai.json",
-                "conversation_per_3_sc_2_openai.json",
-                "conversation_per_3_sc_3_openai.json",
-                "conversation_per_3_sc_4_openai.json",
-                "conversation_per_4_sc_1_openai.json",
-                "conversation_per_4_sc_2_openai.json",
-                "conversation_per_4_sc_3_openai.json",
-                "conversation_per_4_sc_4_openai.json"
-            ];
-
-            for (const file of conversationFiles) {
+            for (const file of CONVERSATION_FILES) {
                 try {
                     const response = await fetch(`conversations/${file}`);
                     if (!response.ok) continue;

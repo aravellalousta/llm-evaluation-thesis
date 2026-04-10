@@ -179,9 +179,9 @@ def main():
         print(f"Generating conversations with {model_name.upper()}")
         print(f"{'='*60}")
 
-        for persona_num in [1, 2, 3, 4]:
+        for persona_num in [3]:
             print(
-                f"Running simulation for {PERSONAS[persona_num]['name']} (Scenario 4)"
+                f"Running simulation for {PERSONAS[persona_num]['name']} (Scenario 2)"
             )
 
             try:
@@ -189,7 +189,7 @@ def main():
                 conversation_data = simulate_tutoring_session(
                     persona_num=persona_num,
                     num_turns=8,
-                    scenario_num=4,
+                    scenario_num=2,
                     model_type=model_name,
                 )
 
@@ -197,7 +197,7 @@ def main():
                 saved_path = save_conversation_to_json(
                     conversation_data,
                     persona_num,
-                    scenario_num=4,
+                    scenario_num=2,
                     model_used=model_name,
                 )
                 print(f"  ✓ Saved to {saved_path}")

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversation Viewer</title>
     <link rel="stylesheet" href="styles/viewer.css">
+    <script src="shared.js"></script>
 </head>
 <body>
     <div class="container">
@@ -34,13 +35,6 @@
     </div>
 
     <script>
-        const PERSONA_NAMES = {
-            1: "Disengaged",
-            2: "Motivated",
-            3: "Frustrated",
-            4: "Wrong Answers"
-        };
-
         function getSessionIdFromURL() {
             const params = new URLSearchParams(window.location.search);
             return params.get("session");
@@ -71,32 +65,7 @@
         }
 
         async function findConversationBySessionId(sessionId) {
-            // Try to load known conversation files
-            const personaFiles = [
-                "conversation_per_1_sc_1_gemini.json",
-                "conversation_per_2_sc_1_gemini.json",
-                "conversation_per_3_sc_1_gemini.json",
-                "conversation_per_4_sc_1_gemini.json",
-                "conversation_per_1_sc_1_openai.json",
-                "conversation_per_1_sc_2_openai.json",
-                "conversation_per_1_sc_3_openai.json",
-                "conversation_per_1_sc_4_openai.json",
-                "conversation_per_2_sc_1_openai.json",
-                "conversation_per_2_sc_2_openai.json",
-                "conversation_per_2_sc_3_openai.json",
-                "conversation_per_2_sc_4_openai.json",
-                "conversation_per_3_sc_1_openai.json",
-                "conversation_per_3_sc_2_openai.json",
-                "conversation_per_3_sc_3_openai.json",
-                "conversation_per_3_sc_4_openai.json",
-                "conversation_per_4_sc_1_openai.json",
-                "conversation_per_4_sc_2_openai.json",
-                "conversation_per_4_sc_3_openai.json",
-                "conversation_per_4_sc_4_openai.json"
-            ];
-            
-
-            for (const file of personaFiles) {
+            for (const file of CONVERSATION_FILES) {
                 try {
                     const response = await fetch(`conversations/${file}`);
                     if (!response.ok) continue;
