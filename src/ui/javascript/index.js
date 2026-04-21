@@ -66,28 +66,28 @@ async function displayConversations(conversations) {
         const isLlmEvaluated = await isLlmConversationEvaluated(conv.session_id);
 
         const statusBadge = isEvaluated 
-            ? '<span class="badge badge-evaluated">Already Evaluated</span>'
-            : '<span class="badge badge-pending">Not Evaluated</span>';
+            ? '<span class="badge badge-evaluated">Evaluated</span>'
+            : '<span class="badge badge-pending">Pending</span>';
         
         const actionButton = isEvaluated
-            ? `<button class="btn btn-view-evaluation" onclick="viewEvaluation('${conv.session_id}', 'human'); return false;">View Evaluation</button>`
-            : `<a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-evaluate">Evaluate</a>`;
+            ? `<button class="btn btn-view-human-evaluation bi bi-person-fill-check" onclick="viewEvaluation('${conv.session_id}', 'human'); return false;">Human Evaluation</button>`
+            : `<a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-view-evaluation bi bi-vector-pen">Evaluate</a>`;
 
         const llmActionButton = isLlmEvaluated
-            ? `<button class="btn btn-view-llm-evaluation" onclick="viewEvaluation('${conv.session_id}', 'llm'); return false;">View LLM Evaluation</button>`
-            : `<button class="btn btn-view-llm-evaluation" disabled>View LLM Evaluation</button>`;
+            ? `<button class="btn btn-view-llm-evaluation bi bi-stars" onclick="viewEvaluation('${conv.session_id}', 'llm'); return false;">LLM Evaluation</button>`
+            : `<button class="btn btn-view-llm-evaluation bi bi-stars" disabled>LLM Evaluation</button>`;
+
+        const viewConvButton = `<a href="conversation_viewer.html?session=${encodeURIComponent(conv.session_id)}" class="btn btn-view bi bi-eye">View</a>`;
         
         const row = `
             <tr>
+                <td>${conv.session_id}</td>
                 <td>${conv.persona_name}</td>
                 <td>${conv.scenario_number}</td>
                 <td>${conv.model}</td>
-                <td>${conv.session_id}</td>
                 <td>${statusBadge}</td>
                 <td>
-                    <a href="conversation_viewer.html?session=${encodeURIComponent(conv.session_id)}" class="btn btn-view">
-                        View Conversation
-                    </a>
+                    ${viewConvButton}
                 </td>
                 <td>
                     ${actionButton}
@@ -199,12 +199,14 @@ async function viewEvaluation(sessionId, type = 'human') {
                 return;
             }
             evaluationData = await response.json();
+            evaluationData.evaluator = 'Claude Sonnet 4.6';
         } else {
             // First try localStorage
             const storageKey = `evaluation_${sessionId}`;
             const cachedData = localStorage.getItem(storageKey);
             if (cachedData) {
                 evaluationData = JSON.parse(cachedData);
+                evaluationData.evaluator = 'Aravella Lousta';   
             } else {
                 // Try to load from file
                 const response = await fetch(`evaluations-completed/evaluation_${sessionId}.json`);
@@ -213,6 +215,7 @@ async function viewEvaluation(sessionId, type = 'human') {
                     return;
                 }
                 evaluationData = await response.json();
+                evaluationData.evaluator = 'Aravella Lousta';
             }
         }
 
@@ -272,6 +275,10 @@ function displayEvaluationModal(evaluationData, conversationData) {
                         <div class="eval-info-item">
                             <strong>Evaluated At:</strong>
                             <span>${new Date(evaluationData.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="eval-info-item">
+                            <strong>Evaluated By:</strong>
+                            <span>${evaluationData.evaluator}</span>
                         </div>
                     </div>
                     
