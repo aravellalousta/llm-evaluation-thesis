@@ -547,3 +547,36 @@ tbody tr:hover {
 .btn-view-evaluation:active {
     transform: translateY(0);
 }
+
+.btn-view-llm-evaluation {
+    background: #7c3aed;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-view-llm-evaluation:hover {
+    background: #6d28d9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-view-llm-evaluation:active {
+    transform: translateY(0);
+}
+
+.btn-view-llm-evaluation:disabled {
+    background: #c4b5fd;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
+}

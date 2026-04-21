@@ -63,13 +63,19 @@ async function displayConversations(conversations) {
     
     for (const conv of conversations) {
         const isEvaluated = await isConversationEvaluated(conv.session_id);
+        const isLlmEvaluated = await isLlmConversationEvaluated(conv.session_id);
+
         const statusBadge = isEvaluated 
             ? '<span class="badge badge-evaluated">Already Evaluated</span>'
             : '<span class="badge badge-pending">Not Evaluated</span>';
         
         const actionButton = isEvaluated
-            ? `<button class="btn btn-view-evaluation" onclick="viewEvaluation('${conv.session_id}'); return false;">View Evaluation</button>`
+            ? `<button class="btn btn-view-evaluation" onclick="viewEvaluation('${conv.session_id}', 'human'); return false;">View Evaluation</button>`
             : `<a href="evaluation_form.html?sessionId=${encodeURIComponent(conv.session_id)}" class="btn btn-evaluate">Evaluate</a>`;
+
+        const llmActionButton = isLlmEvaluated
+            ? `<button class="btn btn-view-llm-evaluation" onclick="viewEvaluation('${conv.session_id}', 'llm'); return false;">View LLM Evaluation</button>`
+            : `<button class="btn btn-view-llm-evaluation" disabled>View LLM Evaluation</button>`;
         
         const row = `
             <tr>
@@ -85,6 +91,9 @@ async function displayConversations(conversations) {
                 </td>
                 <td>
                     ${actionButton}
+                </td>
+                <td>
+                    ${llmActionButton}
                 </td>
             </tr>
         `;
@@ -143,7 +152,7 @@ function showEmptyState() {
     const tableBody = document.getElementById("conversations-table");
     tableBody.innerHTML = `
         <tr>
-            <td colspan="7" class="empty-state">
+            <td colspan="8" class="empty-state">
                 No conversations found. Run simulations to generate conversations.
             </td>
         </tr>
@@ -151,38 +160,60 @@ function showEmptyState() {
 }
 
 /**
- * Check if a conversation has been evaluated
+ * Check if a conversation has been evaluated (human)
  * @param {string} sessionId - The session ID to check
  * @returns {boolean} True if evaluated, false otherwise
  */
 async function isConversationEvaluated(sessionId) {
-    // Check localStorage for cached evaluation
-    // (evaluations are stored here when completed via the evaluation form)
     const storageKey = `evaluation_${sessionId}`;
     return localStorage.getItem(storageKey) !== null;
 }
 
 /**
+ * Check if a conversation has been evaluated by the LLM judge
+ * @param {string} sessionId - The session ID to check
+ * @returns {boolean} True if an LLM evaluation file exists, false otherwise
+ */
+async function isLlmConversationEvaluated(sessionId) {
+    try {
+        const response = await fetch(`evaluations-completed/${sessionId}_llm_judge.json`, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Load and display evaluation in a modal
  * @param {string} sessionId - The session ID for the evaluation
+ * @param {'human'|'llm'} type - Which evaluation to load
  */
-async function viewEvaluation(sessionId) {
+async function viewEvaluation(sessionId, type = 'human') {
     try {
         let evaluationData = null;
-        
-        // First try localStorage
-        const storageKey = `evaluation_${sessionId}`;
-        const cachedData = localStorage.getItem(storageKey);
-        if (cachedData) {
-            evaluationData = JSON.parse(cachedData);
-        } else {
-            // Try to load from file
-            const response = await fetch(`evaluations-completed/evaluation_${sessionId}.json`);
+
+        if (type === 'llm') {
+            const response = await fetch(`evaluations-completed/${sessionId}_llm_judge.json`);
             if (!response.ok) {
-                alert('Evaluation file not found for this session.');
+                alert('LLM evaluation file not found for this session.');
                 return;
             }
             evaluationData = await response.json();
+        } else {
+            // First try localStorage
+            const storageKey = `evaluation_${sessionId}`;
+            const cachedData = localStorage.getItem(storageKey);
+            if (cachedData) {
+                evaluationData = JSON.parse(cachedData);
+            } else {
+                // Try to load from file
+                const response = await fetch(`evaluations-completed/evaluation_${sessionId}.json`);
+                if (!response.ok) {
+                    alert('Evaluation file not found for this session.');
+                    return;
+                }
+                evaluationData = await response.json();
+            }
         }
 
         // Load conversation data for this session
