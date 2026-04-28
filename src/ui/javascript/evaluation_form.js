@@ -264,7 +264,6 @@ function displayTurn(turnIndex) {
 
     // Clear messages
     document.getElementById('errorMessage').classList.remove('show');
-    document.getElementById('successMessage').classList.remove('show');
 }
 
 // Save current turn evaluations
@@ -299,7 +298,6 @@ function nextTurn() {
         const totalTurns = Math.floor((conversationData.turns || []).length / 2);
         if (currentTurnIndex < totalTurns - 1) {
             displayTurn(currentTurnIndex + 1);
-            showSuccess('Turn evaluation saved. Moving to next turn...');
         }
     } else {
         displayError('Please complete all dimensions before moving to the next turn.');
