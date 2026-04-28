@@ -335,6 +335,36 @@ async function loadRubricForDisplay(evaluationData, conversationData) {
     }
 }
 
+function renderConversationSummary(container, summary) {
+    const section = document.createElement('div');
+    section.className = 'eval-summary-section';
+
+    const heading = document.createElement('div');
+    heading.className = 'eval-summary-heading';
+    heading.textContent = 'Conversation Summary';
+    section.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'eval-summary-grid';
+
+    Object.entries(SUMMARY_META).forEach(([key, meta]) => {
+        const score = summary[key];
+        const description = meta.descriptions[score] || '';
+
+        const card = document.createElement('div');
+        card.className = 'eval-summary-card';
+        card.innerHTML = `
+            <div class="eval-summary-title">${meta.title}</div>
+            <div class="eval-summary-score">${score}</div>
+            <div class="eval-summary-description">${description}</div>
+        `;
+        grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+}
+
 /**
  * Render evaluation turns in the modal
  * @param {Object} evaluationData - The evaluation data
@@ -344,6 +374,11 @@ async function loadRubricForDisplay(evaluationData, conversationData) {
 function renderEvaluationTurns(evaluationData, rubricMap, conversationData) {
     const container = document.getElementById('evaluationTurnsContainer');
     container.innerHTML = '';
+
+    // Render conversation summary at the top for LLM evaluations
+    if (evaluationData.conversation_summary) {
+        renderConversationSummary(container, evaluationData.conversation_summary);
+    }
 
     const turnEvaluations = evaluationData.turn_evaluations || {};
     const turns = conversationData && conversationData.turns ? conversationData.turns : [];
