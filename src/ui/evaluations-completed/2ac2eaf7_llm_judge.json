@@ -1,0 +1,69 @@
+{
+  "session_id": "2ac2eaf7",
+  "persona_number": 2,
+  "turn_evaluations": {
+    "0": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "1": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "2": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "3": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "4": {
+      "H1a": 4,
+      "H1b": 4,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 4
+    },
+    "5": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "6": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    },
+    "7": {
+      "H1a": 5,
+      "H1b": 5,
+      "H2": 5,
+      "H3a": 5,
+      "H3b": 5
+    }
+  },
+  "conversation_summary": {
+    "socratic_consistency": 5,
+    "adaptability_arc": 5,
+    "overall_impression": 5
+  },
+  "timestamp": "2026-04-28T14:02:40.426Z",
+  "model_used": "claude-sonnet-4-5"
+}

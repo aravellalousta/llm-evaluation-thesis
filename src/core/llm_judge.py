@@ -78,11 +78,12 @@ def build_user_message(conv: dict, tutor_prompt: str) -> str:
         "CONVERSATION",
     ]
 
-    # Pair consecutive student + tutor messages into numbered turns.
+    # Pair consecutive student + tutor messages into numbered turns (max 8).
+    MAX_TURNS = 8
     turn_index = 0
     messages = conv.get("turns", [])
     i = 0
-    while i < len(messages):
+    while i < len(messages) and turn_index < MAX_TURNS:
         student_text = ""
         tutor_text = ""
 
@@ -247,4 +248,4 @@ if __name__ == "__main__":
     # ── FULL RUN (all conversations) ──────────────────────────────────────────
     # Uncomment the line below and comment out test_single_conversation() above
     # when ready to evaluate everything.
-    main()
+   # main()
