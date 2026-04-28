@@ -241,11 +241,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     # ── TEST MODE ─────────────────────────────────────────────────────────────
-    # Change the filename below to test any conversation. Result is printed
-    # to stdout only — nothing is saved to disk.
-    test_single_conversation("conversation_per_1_sc_1_openai.json")
+    # Change the filename below to test any conversation.
+    # test_single_conversation("conversation_per_1_sc_1_openai.json")
 
     # ── FULL RUN (all conversations) ──────────────────────────────────────────
     # Uncomment the line below and comment out test_single_conversation() above
     # when ready to evaluate everything.
-    # main()
+    main()
