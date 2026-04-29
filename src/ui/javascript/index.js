@@ -1,4 +1,16 @@
 /**
+ * Switch between homepage tabs
+ * @param {'conversations'|'results'} tab
+ */
+function switchTab(tab) {
+    document.getElementById('tab-conversations').style.display = tab === 'conversations' ? '' : 'none';
+    document.getElementById('tab-results').style.display = tab === 'results' ? '' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+    if (tab === 'results') initResultsTab();
+}
+
+/**
  * Index page JavaScript - Conversation list management and filtering
  */
 

@@ -39,6 +39,38 @@ body {
     opacity: 0.95;
 }
 
+.tabs-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #ddd;
+    background: white;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    padding: 16px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    letter-spacing: 0.3px;
+    text-align: center;
+}
+
+.tab-btn:hover {
+    color: #1e5ba8;
+}
+
+.tab-btn.active {
+    color: #1e5ba8;
+    border-bottom-color: #1e5ba8;
+}
+
 .content {
     padding: 40px;
 }
@@ -634,4 +666,157 @@ tbody tr:hover {
     transform: none;
     box-shadow: none;
     opacity: 0.6;
+}
+
+/* ── Evaluation Results Tab ──────────────────────────────────────────────── */
+
+.results-layer {
+    margin-bottom: 40px;
+}
+
+.layer-header {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e5ba8;
+    margin-bottom: 8px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #dde4f0;
+}
+
+.layer-description {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.8;
+    margin-bottom: 24px;
+}
+
+.results-loading {
+    font-size: 14px;
+    color: #888;
+    padding: 40px 0;
+    text-align: center;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.chart-card {
+    background: #fafafa;
+    border: 1px solid #e4e8f0;
+    border-radius: 10px;
+    padding: 24px;
+}
+
+.chart-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.radar-chart-wrapper {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Stats Table */
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.stats-table thead th {
+    background: #f0f4fa;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dde4f0;
+}
+
+.stats-table .metric-col {
+    text-align: left;
+    width: 40%;
+}
+
+.stats-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #eee;
+    color: #444;
+    text-align: center;
+}
+
+.stats-table .metric-col,
+.stats-table td:first-child {
+    text-align: left;
+}
+
+.stats-section-row td {
+    background: #f5f7fb;
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+}
+
+.stats-total-row td {
+    font-weight: 700;
+    color: #1e5ba8;
+    border-top: 2px solid #dde4f0;
+    background: #f0f4fa;
+}
+
+.mean-cell {
+    font-weight: 600;
+    color: #1e5ba8;
+}
+
+.mean-best {
+    color: #15803d !important;
+}
+
+.mean-worst {
+    color: #b91c1c !important;
+}
+
+.sd-cell {
+    color: #999;
+    font-size: 12px;
+}
+
+.dim-badge {
+    display: inline-block;
+    background: #1e5ba8;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.eval-count {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.section-note {
+    font-size: 10px;
+    font-weight: 400;
+    color: #888;
+    text-transform: none;
+    letter-spacing: 0;
 }

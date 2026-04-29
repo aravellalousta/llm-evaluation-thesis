@@ -298,6 +298,7 @@ function nextTurn() {
         const totalTurns = Math.floor((conversationData.turns || []).length / 2);
         if (currentTurnIndex < totalTurns - 1) {
             displayTurn(currentTurnIndex + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     } else {
         displayError('Please complete all dimensions before moving to the next turn.');

@@ -248,4 +248,4 @@ if __name__ == "__main__":
     # ── FULL RUN (all conversations) ──────────────────────────────────────────
     # Uncomment the line below and comment out test_single_conversation() above
     # when ready to evaluate everything.
-   # main()
+    main()

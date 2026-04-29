@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LLM Tutoring Evaluation - Conversations</title>
     <link rel="stylesheet" href="styles/homepage.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="javascript/shared.js"></script>
+    <script src="javascript/results.js"></script>
     <script src="javascript/index.js"></script>
 </head>
 <body>
@@ -15,7 +17,12 @@
             <p>Conversation Management & Analysis</p>
         </div>
 
-        <div class="content">
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('conversations')">Conversations</button>
+            <button class="tab-btn" onclick="switchTab('results')">Evaluation Results</button>
+        </div>
+
+        <div class="content" id="tab-conversations">
             <div class="section-title">
                 How To
             </div>
@@ -79,6 +86,8 @@
                 </table>
             </div>
         </div>
+
+        <div class="content" id="tab-results" style="display: none;"></div>
 
         <div class="footer">
             Aravella Lousta • LLM Evaluation System
