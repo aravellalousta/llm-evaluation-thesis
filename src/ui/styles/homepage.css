@@ -820,3 +820,13 @@ tbody tr:hover {
     text-transform: none;
     letter-spacing: 0;
 }
+
+.persona-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.chart-card-full {
+    grid-column: 1 / -1;
+}

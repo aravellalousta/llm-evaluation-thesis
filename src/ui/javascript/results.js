@@ -4,6 +4,7 @@
 
 let resultsInitialized = false;
 let radarChartInstance = null;
+const barChartInstances = {};
 
 const DIMENSIONS = ['H1a', 'H1b', 'H2', 'H3a', 'H3b'];
 const DIMENSION_LABELS = {
@@ -23,7 +24,7 @@ const SUMMARY_LABELS = {
 
 const MODEL_COLORS = {
     'OpenAI GPT-4o':    { border: '#1e5ba8', bg: 'rgba(30, 91, 168, 0.12)' },
-    'Gemini 2.5 Flash': { border: '#7c3aed', bg: 'rgba(124, 58, 237, 0.12)' }
+    'Gemini 2.5 Flash': { border: '#F18F01', bg: 'rgba(241, 143, 1, 0.12)' }
 };
 
 async function initResultsTab() {
@@ -56,6 +57,24 @@ async function initResultsTab() {
                 </div>
             </div>
         </div>
+
+        <div class="results-layer" id="layer2-section" style="display:none;">
+            <div class="layer-header">Layer 2 — Persona Analysis</div>
+            <div class="layer-description">
+                Mean sub-dimension scores broken down by student persona, compared across both models.
+                Each chart shows how GPT-4o and Gemini 2.5 Flash performed for each of the 4 student profiles.
+                Focus dimensions: <strong>H1a</strong> (Socratic Restraint) and <strong>H1b</strong> (Pedagogical Adaptability)
+                are the most thesis-relevant; <strong>H3a</strong> (Psychological Safety) reveals tonal differences
+                under pressure.
+            </div>
+            <div class="persona-charts-grid">
+                ${['H1a','H1b','H2','H3a','H3b'].map((d, i) => `
+                <div class="chart-card">
+                    <div class="chart-card-title"><span class="dim-badge">${d}</span> ${{"H1a":"Socratic Restraint","H1b":"Pedagogical Adaptability","H2":"Technical Accuracy","H3a":"Psychological Safety","H3b":"Pedagogical Safety"}[d]}</div>
+                    <canvas id="barChart_${d}"></canvas>
+                </div>`).join('')}
+            </div>
+        </div>
     `;
 
     try {
@@ -68,6 +87,10 @@ async function initResultsTab() {
 
         document.getElementById('results-loading').style.display = 'none';
         document.getElementById('results-content').style.display = '';
+
+        const personaStats = aggregateByModelAndPersona(evaluations);
+        renderPersonaAnalysis(personaStats);
+        document.getElementById('layer2-section').style.display = '';
     } catch (err) {
         console.error('Failed to load evaluation results:', err);
         document.getElementById('results-loading').textContent = 'Failed to load evaluation data.';
@@ -271,4 +294,90 @@ function renderModelComparisonTable(stats) {
     </tbody></table>`;
 
     container.innerHTML = html;
+}
+
+// ── Layer 2: Persona Analysis ──────────────────────────────────────────────
+
+function aggregateByModelAndPersona(evaluations) {
+    const models = ['OpenAI GPT-4o', 'Gemini 2.5 Flash'];
+    const personas = [1, 2, 3, 4];
+    const result = {};
+
+    for (const model of models) {
+        result[model] = {};
+        for (const persona of personas) {
+            const subset = evaluations.filter(e => e._model === model && e.persona_number === persona);
+            const dimScores = Object.fromEntries(DIMENSIONS.map(d => [d, []]));
+
+            for (const ev of subset) {
+                for (const turnData of Object.values(ev.turn_evaluations || {})) {
+                    for (const dim of DIMENSIONS) {
+                        if (turnData[dim] != null) dimScores[dim].push(turnData[dim]);
+                    }
+                }
+            }
+
+            result[model][persona] = Object.fromEntries(
+                DIMENSIONS.map(d => [d, computeStats(dimScores[d])])
+            );
+        }
+    }
+
+    return result;
+}
+
+function renderPersonaAnalysis(personaStats) {
+    const models = ['OpenAI GPT-4o', 'Gemini 2.5 Flash'];
+    const personas = [1, 2, 3, 4];
+    const personaLabels = personas.map(p => PERSONA_NAMES[p] || `Persona ${p}`);
+
+    for (const dim of DIMENSIONS) {
+        const canvasId = `barChart_${dim}`;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) continue;
+
+        if (barChartInstances[canvasId]) barChartInstances[canvasId].destroy();
+
+        barChartInstances[canvasId] = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: personaLabels,
+                datasets: models.map(model => ({
+                    label: model,
+                    data: personas.map(p => personaStats[model]?.[p]?.[dim]?.mean ?? 0),
+                    backgroundColor: MODEL_COLORS[model].bg.replace('0.12', '0.75'),
+                    borderColor: MODEL_COLORS[model].border,
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 5,
+                        ticks: { stepSize: 1, font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.06)' }
+                    },
+                    x: {
+                        ticks: { font: { size: 11 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 11 }, padding: 16, usePointStyle: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
