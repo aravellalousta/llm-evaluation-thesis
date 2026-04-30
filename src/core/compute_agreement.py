@@ -111,9 +111,9 @@ def main() -> None:
             off_by_1 = sum(d == 1 for d in diffs)
             off_by_2p = sum(d >= 2 for d in diffs)
             breakdown = {
-                "exact": round(exact / n * 100, 1),
-                "off_by_1": round(off_by_1 / n * 100, 1),
-                "off_by_2_plus": round(off_by_2p / n * 100, 1),
+                "exact": round(exact / n * 100, 2),
+                "off_by_1": round(off_by_1 / n * 100, 2),
+                "off_by_2_plus": round(off_by_2p / n * 100, 2),
             }
 
         results[dim] = {

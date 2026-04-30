@@ -528,14 +528,6 @@ async function fetchAgreementStats() {
     return res.json();
 }
 
-function kappaLabel(k) {
-    if (k === null) return { text: 'N/A', cls: '' };
-    if (k < 0.40)  return { text: 'Poor',           cls: 'kappa-poor' };
-    if (k < 0.60)  return { text: 'Moderate',       cls: 'kappa-moderate' };
-    if (k < 0.80)  return { text: 'Substantial',    cls: 'kappa-substantial' };
-    return                 { text: 'Almost Perfect', cls: 'kappa-perfect' };
-}
-
 function renderAgreementTable(agreementData) {
     const rows = DIMENSIONS.map(dim => {
         const { n, kappa, agreement } = agreementData[dim];
@@ -567,19 +559,23 @@ function renderAgreementTable(agreementData) {
 function renderAgreementBreakdown(agreementData) {
     const seg = (pct, cls) => {
         if (pct <= 0) return '';
-        return `<div class="bd-seg ${cls}" style="flex:${pct}">${pct}%</div>`;
+        return `<div class="bd-seg ${cls}" style="flex:${pct}">${pct.toFixed(2)}%</div>`;
     };
 
     const rows = DIMENSIONS.map(dim => {
         const bd = agreementData[dim]?.agreement_breakdown;
         if (!bd) return '';
+        const total = bd.exact + bd.off_by_1 + bd.off_by_2_plus;
+        const exact = bd.exact / total * 100;
+        const off1  = bd.off_by_1 / total * 100;
+        const off2  = bd.off_by_2_plus / total * 100;
         return `
         <div class="bd-row">
             <div class="bd-label"><span class="dim-badge">${dim}</span> ${DIMENSION_LABELS[dim]}</div>
             <div class="bd-bar">
-                ${seg(bd.exact,         'bd-exact')}
-                ${seg(bd.off_by_1,      'bd-off1')}
-                ${seg(bd.off_by_2_plus, 'bd-off2')}
+                ${seg(exact, 'bd-exact')}
+                ${seg(off1,  'bd-off1')}
+                ${seg(off2,  'bd-off2')}
             </div>
         </div>`;
     }).join('');
