@@ -5,6 +5,7 @@
 let resultsInitialized = false;
 let radarChartInstance = null;
 const barChartInstances = {};
+const lineChartInstances = {};
 
 const DIMENSIONS = ['H1a', 'H1b', 'H2', 'H3a', 'H3b'];
 const DIMENSION_LABELS = {
@@ -36,7 +37,7 @@ async function initResultsTab() {
         <div class="section-title">Evaluation Results</div>
 
         <div class="results-layer">
-            <div class="layer-header">Layer 1 — Model Comparison</div>
+            <div class="layer-header">1. Model Comparison (LLM Judge)</div>
             <div class="layer-description">
                 Mean scores per sub-dimension (H1a–H3b) and conversation-level summary metrics,
                 averaged across all LLM judge evaluations and split by model.
@@ -59,19 +60,32 @@ async function initResultsTab() {
         </div>
 
         <div class="results-layer" id="layer2-section" style="display:none;">
-            <div class="layer-header">Layer 2 — Persona Analysis</div>
+            <div class="layer-header">2. Persona Analysis (LLM Judge)</div>
             <div class="layer-description">
                 Mean sub-dimension scores broken down by student persona, compared across both models.
                 Each chart shows how GPT-4o and Gemini 2.5 Flash performed for each of the 4 student profiles.
-                Focus dimensions: <strong>H1a</strong> (Socratic Restraint) and <strong>H1b</strong> (Pedagogical Adaptability)
-                are the most thesis-relevant; <strong>H3a</strong> (Psychological Safety) reveals tonal differences
-                under pressure.
             </div>
             <div class="persona-charts-grid">
                 ${['H1a','H1b','H2','H3a','H3b'].map((d, i) => `
                 <div class="chart-card">
                     <div class="chart-card-title"><span class="dim-badge">${d}</span> ${{"H1a":"Socratic Restraint","H1b":"Pedagogical Adaptability","H2":"Technical Accuracy","H3a":"Psychological Safety","H3b":"Pedagogical Safety"}[d]}</div>
                     <canvas id="barChart_${d}"></canvas>
+                </div>`).join('')}
+            </div>
+        </div>
+
+        <div class="results-layer" id="layer3-section" style="display:none;">
+            <div class="layer-header">3. Scenario Analysis — Does Difficulty Matter?</div>
+            <div class="layer-description">
+                Mean sub-dimension scores per scenario (1 = Introductory → 4 = Advanced), split by model.
+                A declining line as difficulty increases suggests the model struggles to maintain Socratic
+                restraint or adaptability under harder content.
+            </div>
+            <div class="persona-charts-grid">
+                ${['H1a','H1b','H2','H3a','H3b'].map(d => `
+                <div class="chart-card">
+                    <div class="chart-card-title"><span class="dim-badge">${d}</span> ${{"H1a":"Socratic Restraint","H1b":"Pedagogical Adaptability","H2":"Technical Accuracy","H3a":"Psychological Safety","H3b":"Pedagogical Safety"}[d]}</div>
+                    <canvas id="lineChart_${d}"></canvas>
                 </div>`).join('')}
             </div>
         </div>
@@ -91,6 +105,10 @@ async function initResultsTab() {
         const personaStats = aggregateByModelAndPersona(evaluations);
         renderPersonaAnalysis(personaStats);
         document.getElementById('layer2-section').style.display = '';
+
+        const scenarioStats = aggregateByModelAndScenario(evaluations);
+        renderScenarioAnalysis(scenarioStats);
+        document.getElementById('layer3-section').style.display = '';
     } catch (err) {
         console.error('Failed to load evaluation results:', err);
         document.getElementById('results-loading').textContent = 'Failed to load evaluation data.';
@@ -118,6 +136,7 @@ async function loadAllLlmEvaluations(sessionModelMap) {
             if (!response.ok) return;
             const data = await response.json();
             data._model = sessionModelMap[sid];
+            data._scenario = data.scenario_number ?? null;
             evaluations.push(data);
         } catch { /* skip */ }
     }));
@@ -363,6 +382,96 @@ function renderPersonaAnalysis(personaStats) {
                     },
                     x: {
                         ticks: { font: { size: 11 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 11 }, padding: 16, usePointStyle: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// ── Layer 3: Scenario Analysis ─────────────────────────────────────────────
+
+function aggregateByModelAndScenario(evaluations) {
+    const models = ['OpenAI GPT-4o', 'Gemini 2.5 Flash'];
+    const scenarios = [1, 2, 3, 4];
+    const result = {};
+
+    for (const model of models) {
+        result[model] = {};
+        for (const scenario of scenarios) {
+            const subset = evaluations.filter(e => e._model === model && e._scenario === scenario);
+            const dimScores = Object.fromEntries(DIMENSIONS.map(d => [d, []]));
+
+            for (const ev of subset) {
+                for (const turnData of Object.values(ev.turn_evaluations || {})) {
+                    for (const dim of DIMENSIONS) {
+                        if (turnData[dim] != null) dimScores[dim].push(turnData[dim]);
+                    }
+                }
+            }
+
+            result[model][scenario] = Object.fromEntries(
+                DIMENSIONS.map(d => [d, computeStats(dimScores[d])])
+            );
+        }
+    }
+
+    return result;
+}
+
+function renderScenarioAnalysis(scenarioStats) {
+    const models = ['OpenAI GPT-4o', 'Gemini 2.5 Flash'];
+    const scenarios = [1, 2, 3, 4];
+    const scenarioLabels = ['Scenario 1\n(Introductory)', 'Scenario 2\n(Easy)', 'Scenario 3\n(Intermediate)', 'Scenario 4\n(Advanced)'];
+
+    for (const dim of DIMENSIONS) {
+        const canvasId = `lineChart_${dim}`;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) continue;
+
+        if (lineChartInstances[canvasId]) lineChartInstances[canvasId].destroy();
+
+        lineChartInstances[canvasId] = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: scenarioLabels,
+                datasets: models.map(model => ({
+                    label: model,
+                    data: scenarios.map(s => scenarioStats[model]?.[s]?.[dim]?.mean ?? null),
+                    borderColor: MODEL_COLORS[model].border,
+                    backgroundColor: MODEL_COLORS[model].bg,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: MODEL_COLORS[model].border,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.3,
+                    fill: true
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        min: 3,
+                        max: 5,
+                        ticks: { stepSize: 0.5, font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.06)' }
+                    },
+                    x: {
+                        ticks: { font: { size: 10 } },
                         grid: { display: false }
                     }
                 },
