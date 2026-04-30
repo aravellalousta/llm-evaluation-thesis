@@ -177,8 +177,13 @@ function showEmptyState() {
  * @returns {boolean} True if evaluated, false otherwise
  */
 async function isConversationEvaluated(sessionId) {
-    const storageKey = `evaluation_${sessionId}`;
-    return localStorage.getItem(storageKey) !== null;
+    if (localStorage.getItem(`evaluation_${sessionId}`) !== null) return true;
+    try {
+        const response = await fetch(`evaluations-completed/evaluation_${sessionId}.json`, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
 }
 
 /**
