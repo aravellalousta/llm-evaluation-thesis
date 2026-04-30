@@ -75,7 +75,7 @@ async function initResultsTab() {
         </div>
 
         <div class="results-layer" id="layer3-section" style="display:none;">
-            <div class="layer-header">3. Scenario Analysis — Does Difficulty Matter?</div>
+            <div class="layer-header">3. Scenario Analysis</div>
             <div class="layer-description">
                 Mean sub-dimension scores per scenario (1 = Introductory → 4 = Advanced), split by model.
                 A declining line as difficulty increases suggests the model struggles to maintain Socratic
@@ -88,6 +88,28 @@ async function initResultsTab() {
                     <canvas id="lineChart_${d}"></canvas>
                 </div>`).join('')}
             </div>
+        </div>
+
+        <div class="results-layer" id="layer4-section" style="display:none;">
+            <div class="layer-header">4. Human vs. LLM Judge Agreement</div>
+            <div class="layer-description">
+                Methodological validation: Cohen's Kappa and percentage agreement between human scores
+                and LLM judge scores, computed on the 8-conversation human evaluation subset (turn level).
+            </div>
+            <div id="agreementTableContainer"></div>
+            
+            <div class="agreement-insight">
+                <span class="agreement-insight-icon">&#128270;</span>
+                <p>
+                    The LLM judge and human evaluator agreed on the same score in roughly half of all cases
+                    for most dimensions. For technical accuracy, agreement was very high (89%) but
+                    statistically this was expected, since both raters consistently assigned high scores to
+                    technically correct responses. These results suggest that automated evaluation is
+                    reliable for <strong>objective criteria</strong> but less so for
+                    <strong>subjective pedagogical judgements</strong>, which require human interpretation.
+                </p>
+            </div>
+            <div id="agreementBreakdownContainer"></div>
         </div>
     `;
 
@@ -109,6 +131,11 @@ async function initResultsTab() {
         const scenarioStats = aggregateByModelAndScenario(evaluations);
         renderScenarioAnalysis(scenarioStats);
         document.getElementById('layer3-section').style.display = '';
+
+        const agreementData = await fetchAgreementStats();
+        renderAgreementTable(agreementData);
+        renderAgreementBreakdown(agreementData);
+        document.getElementById('layer4-section').style.display = '';
     } catch (err) {
         console.error('Failed to load evaluation results:', err);
         document.getElementById('results-loading').textContent = 'Failed to load evaluation data.';
@@ -489,4 +516,80 @@ function renderScenarioAnalysis(scenarioStats) {
             }
         });
     }
+}
+
+// ── Layer 4: Human vs. LLM Judge Agreement ────────────────────────────────
+// Pre-computed by src/core/compute_agreement.py (sklearn quadratic kappa).
+// Re-run that script whenever new human evaluations are added.
+
+async function fetchAgreementStats() {
+    const res = await fetch('evaluations-completed/agreement_stats.json');
+    if (!res.ok) throw new Error('Could not load agreement_stats.json');
+    return res.json();
+}
+
+function kappaLabel(k) {
+    if (k === null) return { text: 'N/A', cls: '' };
+    if (k < 0.40)  return { text: 'Poor',           cls: 'kappa-poor' };
+    if (k < 0.60)  return { text: 'Moderate',       cls: 'kappa-moderate' };
+    if (k < 0.80)  return { text: 'Substantial',    cls: 'kappa-substantial' };
+    return                 { text: 'Almost Perfect', cls: 'kappa-perfect' };
+}
+
+function renderAgreementTable(agreementData) {
+    const rows = DIMENSIONS.map(dim => {
+        const { n, kappa, agreement } = agreementData[dim];
+        const kappaStr = kappa !== null ? kappa.toFixed(3) : '—';
+        const agreeStr = agreement !== null ? `${agreement}%` : '—';
+        return `
+        <tr>
+            <td><span class="dim-badge">${dim}</span> ${DIMENSION_LABELS[dim]}</td>
+            <td class="mean-cell">${n}</td>
+            <td class="mean-cell">${kappaStr}</td>
+            <td class="mean-cell">${agreeStr}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('agreementTableContainer').innerHTML = `
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Sub-dimension</th>
+                    <th>Paired turns (n)</th>
+                    <th>Cohen's κ (quadratic)</th>
+                    <th>% Agreement</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function renderAgreementBreakdown(agreementData) {
+    const seg = (pct, cls) => {
+        if (pct <= 0) return '';
+        return `<div class="bd-seg ${cls}" style="flex:${pct}">${pct}%</div>`;
+    };
+
+    const rows = DIMENSIONS.map(dim => {
+        const bd = agreementData[dim]?.agreement_breakdown;
+        if (!bd) return '';
+        return `
+        <div class="bd-row">
+            <div class="bd-label"><span class="dim-badge">${dim}</span> ${DIMENSION_LABELS[dim]}</div>
+            <div class="bd-bar">
+                ${seg(bd.exact,         'bd-exact')}
+                ${seg(bd.off_by_1,      'bd-off1')}
+                ${seg(bd.off_by_2_plus, 'bd-off2')}
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('agreementBreakdownContainer').innerHTML = `
+        <div class="bd-section-title">Score Agreement Breakdown</div>
+        <div class="bd-legend">
+            <span class="bd-swatch bd-exact"></span>Exact match
+            <span class="bd-swatch bd-off1"></span>Off by 1
+            <span class="bd-swatch bd-off2"></span>Off by 2 or more
+        </div>
+        <div class="bd-chart">${rows}</div>`;
 }

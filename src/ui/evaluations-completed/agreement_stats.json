@@ -1,0 +1,62 @@
+{
+  "H1a": {
+    "label": "Socratic Restraint",
+    "n": 64,
+    "kappa": 0.197,
+    "agreement": 48.4,
+    "interpretation": "Poor",
+    "agreement_breakdown": {
+      "exact": 48.4,
+      "off_by_1": 34.4,
+      "off_by_2_plus": 17.2
+    }
+  },
+  "H1b": {
+    "label": "Pedagogical Adaptability",
+    "n": 64,
+    "kappa": 0.243,
+    "agreement": 45.3,
+    "interpretation": "Poor",
+    "agreement_breakdown": {
+      "exact": 45.3,
+      "off_by_1": 34.4,
+      "off_by_2_plus": 20.3
+    }
+  },
+  "H2": {
+    "label": "Technical Accuracy",
+    "n": 64,
+    "kappa": 0.0,
+    "agreement": 89.1,
+    "interpretation": "Poor",
+    "agreement_breakdown": {
+      "exact": 89.1,
+      "off_by_1": 9.4,
+      "off_by_2_plus": 1.6
+    }
+  },
+  "H3a": {
+    "label": "Psychological Safety",
+    "n": 64,
+    "kappa": 0.09,
+    "agreement": 51.6,
+    "interpretation": "Poor",
+    "agreement_breakdown": {
+      "exact": 51.6,
+      "off_by_1": 26.6,
+      "off_by_2_plus": 21.9
+    }
+  },
+  "H3b": {
+    "label": "Pedagogical Safety",
+    "n": 64,
+    "kappa": 0.107,
+    "agreement": 54.7,
+    "interpretation": "Poor",
+    "agreement_breakdown": {
+      "exact": 54.7,
+      "off_by_1": 26.6,
+      "off_by_2_plus": 18.8
+    }
+  }
+}
