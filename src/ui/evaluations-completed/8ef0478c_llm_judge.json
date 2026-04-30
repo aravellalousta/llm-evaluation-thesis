@@ -65,5 +65,6 @@
     "overall_impression": 4
   },
   "timestamp": "2026-04-28T14:01:32.060Z",
-  "model_used": "claude-sonnet-4-5"
+  "model_used": "claude-sonnet-4-5",
+  "scenario_number": 4
 }
