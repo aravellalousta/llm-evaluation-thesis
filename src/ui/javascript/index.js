@@ -72,10 +72,16 @@ async function displayConversations(conversations) {
         showEmptyState();
         return;
     }
-    
-    for (const conv of conversations) {
-        const isEvaluated = await isConversationEvaluated(conv.session_id);
-        const isLlmEvaluated = await isLlmConversationEvaluated(conv.session_id);
+
+    // Pre-fetch all statuses in parallel, then sort evaluated first
+    const statuses = await Promise.all(conversations.map(conv =>
+        Promise.all([isConversationEvaluated(conv.session_id), isLlmConversationEvaluated(conv.session_id)])
+    ));
+    const sorted = conversations
+        .map((conv, i) => ({ conv, isEvaluated: statuses[i][0], isLlmEvaluated: statuses[i][1] }))
+        .sort((a, b) => b.isEvaluated - a.isEvaluated);
+
+    for (const { conv, isEvaluated, isLlmEvaluated } of sorted) {
 
         const statusBadge = isEvaluated 
             ? '<span class="badge badge-evaluated">Evaluated</span>'
