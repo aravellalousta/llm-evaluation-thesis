@@ -274,7 +274,7 @@ function saveCurrentEvaluation() {
     Object.keys(rubricData).forEach(dimensionId => {
         const value = formData.get(dimensionId);
         if (value) {
-            evals[dimensionId] = value;
+            evals[dimensionId] = parseInt(value, 10);
         }
     });
 
